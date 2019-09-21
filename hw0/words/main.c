@@ -23,6 +23,7 @@ size_t get_word(FILE *infile, char *buf, size_t buflen) {
     Stateless input parser - extract next word from a input stream, skipping initial non-alpha
     returns strlen(buf)
   */
+  
   return 0;
 }
 
