@@ -95,6 +95,37 @@ int cmd_ls(unused struct tokens *tokens){
     closedir(dr);
     return 0;
 }
+
+int exec_built_in(unused struct tokens *tokens){
+    char *program = tokens_get_token(tokens, 0);
+    size_t n = tokens_get_length(tokens);
+    char *path = getenv("PATH");
+    struct tokens *token_path = tokenize(path);
+    char *args[n+1];
+    for (unsigned i = 0; i < n; i++){
+        char *word = tokens_get_token(tokens, i);
+        args[i] = (char *) malloc(sizeof(word));
+        strcpy(args[i], word);
+    }
+
+    args[n] = NULL;
+    size_t path_size = tokens_get_length(token_path);
+    for (unsigned i = 0; i < path_size; i ++){
+        char *curr_path = tokens_get_token(token_path, i);
+        pid_t childpid = fork();
+        if (childpid < 0){
+            printf("Cannot fork;");
+            return 0;
+        }else if (childpid == 0){
+            strcat(curr_path, "/");
+            strcat(curr_path, program);
+            execv(curr_path, args);
+            exit(0);
+        }
+    }
+
+    exit(0);
+}
 /* Exits this shell */
 int cmd_exit(unused struct tokens *tokens) {
   exit(0);
@@ -154,8 +185,7 @@ int main(unused int argc, unused char *argv[]) {
     if (fundex >= 0) {
       cmd_table[fundex].fun(tokens);
     } else {
-      /* REPLACE this to run commands as programs. */
-      fprintf(stdout, "This shell doesn't know how to run programs.\n");
+        exec_built_in(tokens);
     }
 
     if (shell_is_interactive)
