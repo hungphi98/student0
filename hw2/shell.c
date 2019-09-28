@@ -10,6 +10,8 @@
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
+#include <limits.h>
+#include <dirent.h>
 
 #include "tokenizer.h"
 
@@ -30,6 +32,9 @@ pid_t shell_pgid;
 
 int cmd_exit(struct tokens *tokens);
 int cmd_help(struct tokens *tokens);
+int cmd_ls(struct tokens *tokens);
+int cmd_pwd(struct tokens *tokens);
+int cmd_cd(struct tokens *tokens);
 
 /* Built-in command functions take token array (see parse.h) and return int */
 typedef int cmd_fun_t(struct tokens *tokens);
@@ -44,6 +49,9 @@ typedef struct fun_desc {
 fun_desc_t cmd_table[] = {
   {cmd_help, "?", "show this help menu"},
   {cmd_exit, "exit", "exit the command shell"},
+  {cmd_ls, "ls", "list current directory"},
+  {cmd_pwd, "pwd", "print working directory"},
+  {cmd_cd, "cd", "change directory"},
 };
 
 /* Prints a helpful description for the given command */
@@ -53,6 +61,40 @@ int cmd_help(unused struct tokens *tokens) {
   return 1;
 }
 
+/* Print current working directory*/
+int cmd_pwd(unused struct tokens *tokens){
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != NULL){
+        printf("%s\n",cwd);
+    }else{
+        perror("getcwd() error");
+        return 0;
+    }
+    return 1;
+}
+
+/* Change directory*/
+int cmd_cd(unused struct tokens *tokens){
+    char *s = tokens_get_token(tokens,1);
+    chdir(s);
+    return 1;
+}
+
+/* List subdirectories and files in current directory*/
+int cmd_ls(unused struct tokens *tokens){
+    struct dirent *de; //pointer to directory
+    DIR *dr = opendir("."); //pointer of DIR type
+    if (dr == NULL){ //if couldn't open directory
+        printf("Could not open current directory");
+        return 0;
+    }
+    while ((de = readdir(dr))!= NULL){
+        printf("%s\t", de->d_name);
+    }
+    printf("\n");
+    closedir(dr);
+    return 0;
+}
 /* Exits this shell */
 int cmd_exit(unused struct tokens *tokens) {
   exit(0);
